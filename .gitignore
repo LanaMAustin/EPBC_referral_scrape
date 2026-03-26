@@ -1,0 +1,7 @@
+# Temporary PDF downloads - never commit these
+epbc_pdfs/
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
