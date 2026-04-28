@@ -38,6 +38,8 @@ jobs:
             libfontconfig1-dev \
             libfreetype6-dev \
             libpoppler-cpp-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
             default-jdk \
             r-cran-rjava
           sudo R CMD javareconf
