@@ -35,6 +35,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev \
             libpng-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
             default-jdk \
             r-cran-rjava
           sudo R CMD javareconf
