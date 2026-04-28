@@ -33,7 +33,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev \
+            libpng-dev \
+            default-jdk \
+            r-cran-rjava
+          sudo R CMD javareconf
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
