@@ -37,6 +37,7 @@ jobs:
             libpng-dev \
             libfontconfig1-dev \
             libfreetype6-dev \
+            libpoppler-cpp-dev \
             default-jdk \
             r-cran-rjava
           sudo R CMD javareconf
