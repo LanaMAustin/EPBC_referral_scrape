@@ -62,7 +62,7 @@ jobs:
               'kableExtra',
               'htmltools'
             ), repos = 'https://cloud.r-project.org')
-            install.packages('tabulapdf', repos = 'https://cloud.r-project.org')
+            install.packages('tabulapdf', repos = c('https://ropensci.r-universe.dev', 'https://cloud.r-project.org'))
           "
 
       - name: Run EPBC monitoring
