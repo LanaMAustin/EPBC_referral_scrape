@@ -46,7 +46,7 @@ jobs:
           r-version: '4.3.0'
 
       - name: Configure Java for R
-        run: R CMD javareconf
+        run: sudo R CMD javareconf
 
       - name: Cache R packages
         uses: actions/cache@v4
