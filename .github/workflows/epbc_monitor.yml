@@ -2,8 +2,11 @@ name: EPBC Referrals Monitor
 
 on:
   schedule:
-    - cron: '0 22 * * 0-4'  # 8am AEST (UTC+10) Mon-Fri
+    - cron: '0 22 * * 0-4'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   monitor:
