@@ -38,6 +38,7 @@ jobs:
             libpng-dev \
             libpoppler-cpp-dev \
             libuv1-dev \
+            libjpeg-dev \
             default-jdk
 
       - name: Set up R
