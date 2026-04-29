@@ -1,16 +1,12 @@
 # ============================================================================
 # EPBC Monitoring System - GitHub Actions Version
-# Version 3.0 - Adapted for GitHub Actions runner
-#
-# Scrapes EPBC referrals, searches for trigger species, creates HTML table
-# All paths are relative - designed to run in a GitHub Actions workflow
+# Version 4.0 - Simplified output (no HTML dependencies)
 # ============================================================================
 
 # ============================================================================
 # SETUP
 # ============================================================================
 
-# Load required libraries
 library(chromote)
 library(rvest)
 library(dplyr)
@@ -18,16 +14,12 @@ library(stringr)
 library(tabulapdf)
 library(pdftools)
 library(httr)
-library(knitr)
-library(kableExtra)
-library(htmltools)
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 
 CONFIG <- list(
-  # Trigger species list - scientific and common names
   trigger_species = data.frame(
     scientific = c(
       "Lathamus discolor",
@@ -70,10 +62,9 @@ CONFIG <- list(
     stringsAsFactors = FALSE
   ),
 
-  # Relative file paths - all relative to repo root
   download_folder    = "epbc_pdfs",
   tracking_file      = "data/processed_referrals.csv",
-  html_output_folder = "output"
+  output_folder      = "output"
 )
 
 # ============================================================================
@@ -83,26 +74,21 @@ CONFIG <- list(
 scrape_epbc_urls_simple <- function() {
 
   cat("Starting Chrome session...\n")
-
   b <- ChromoteSession$new()
 
   tryCatch({
     cat("Navigating to EPBC portal...\n")
-
     b$Page$navigate("https://epbcpublicportal.environment.gov.au/open-for-comments/")
     b$Page$loadEventFired()
-
     Sys.sleep(5)
 
     cat("Loading dynamic content...\n")
     b$Runtime$evaluate("window.scrollTo(0, document.body.scrollHeight);")
-
     Sys.sleep(3)
 
     html_result  <- b$Runtime$evaluate("document.documentElement.outerHTML")
     html_content <- html_result$result$value
-
-    parsed_page <- read_html(html_content)
+    parsed_page  <- read_html(html_content)
 
     all_links  <- parsed_page %>% html_nodes("a") %>% html_attr("href")
     link_texts <- parsed_page %>% html_nodes("a") %>% html_text(trim = TRUE)
@@ -173,12 +159,9 @@ find_pdf_with_chromote <- function(referral_url_or_df, epbc_number_or_row = NULL
   if (is.data.frame(referral_url_or_df)) {
     urls_df    <- referral_url_or_df
     row_number <- ifelse(is.null(epbc_number_or_row), 1, epbc_number_or_row)
-
     if (row_number > nrow(urls_df)) stop("Row number exceeds dataframe size")
-
     referral_url <- urls_df$url[row_number]
     epbc_number  <- urls_df$link_text[row_number]
-
   } else {
     referral_url <- referral_url_or_df
     epbc_number  <- epbc_number_or_row
@@ -186,7 +169,6 @@ find_pdf_with_chromote <- function(referral_url_or_df, epbc_number_or_row = NULL
   }
 
   message("Looking for PDF with browser: ", epbc_number)
-
   b <- ChromoteSession$new()
 
   tryCatch({
@@ -203,11 +185,11 @@ find_pdf_with_chromote <- function(referral_url_or_df, epbc_number_or_row = NULL
     if (length(pdf_matches) > 0) {
       clean_path <- sub("^/", "", pdf_matches[1])
       pdf_url    <- paste0("https://epbcpublicportal.environment.gov.au/", clean_path)
-      message("✅ Found PDF")
+      message("Found PDF")
       return(pdf_url)
     }
 
-    message("❌ No PDF found")
+    message("No PDF found")
     return(NULL)
 
   }, finally = {
@@ -247,33 +229,13 @@ download_pdfs_for_search <- function(urls_df, download_folder = CONFIG$download_
     message("Created folder: ", download_folder)
   }
 
-  download_log <- data.frame(
-    epbc_number     = character(),
-    filename        = character(),
-    filepath        = character(),
-    download_status = character(),
-    file_size_kb    = numeric(),
-    download_time   = character(),
-    stringsAsFactors = FALSE
-  )
-
   successful_downloads <- 0
   failed_downloads     <- 0
 
   for (i in 1:nrow(urls_df)) {
 
     if (is.na(urls_df$pdf_url[i])) {
-      message("Row ", i, " (", urls_df$link_text[i], "): No PDF URL available - skipping")
-
-      download_log <- rbind(download_log, data.frame(
-        epbc_number     = urls_df$link_text[i],
-        filename        = NA,
-        filepath        = NA,
-        download_status = "No PDF URL",
-        file_size_kb    = NA,
-        download_time   = as.character(Sys.time())
-      ))
-
+      message("Row ", i, " (", urls_df$link_text[i], "): No PDF URL - skipping")
       failed_downloads <- failed_downloads + 1
       next
     }
@@ -281,12 +243,10 @@ download_pdfs_for_search <- function(urls_df, download_folder = CONFIG$download_
     tryCatch({
       message("Downloading ", i, " of ", nrow(urls_df), ": ", urls_df$link_text[i])
 
-      epbc_original    <- urls_df$link_text[i]
-      epbc_for_filename <- gsub("/", "_", epbc_original)
+      epbc_for_filename <- gsub("/", "_", urls_df$link_text[i])
       epbc_for_filename <- gsub("[^A-Za-z0-9_]", "", epbc_for_filename)
-
-      filename <- paste0(epbc_for_filename, "_referral.pdf")
-      filepath <- file.path(download_folder, filename)
+      filename          <- paste0(epbc_for_filename, "_referral.pdf")
+      filepath          <- file.path(download_folder, filename)
 
       response <- GET(urls_df$pdf_url[i],
                       write_disk(filepath, overwrite = TRUE),
@@ -294,31 +254,10 @@ download_pdfs_for_search <- function(urls_df, download_folder = CONFIG$download_
 
       if (status_code(response) == 200 && file.exists(filepath)) {
         file_size <- round(file.size(filepath) / 1024, 2)
-        message("✅ Successfully downloaded: ", filename, " (", file_size, " KB)")
-
-        download_log <- rbind(download_log, data.frame(
-          epbc_number     = epbc_original,
-          filename        = filename,
-          filepath        = filepath,
-          download_status = "Success",
-          file_size_kb    = file_size,
-          download_time   = as.character(Sys.time())
-        ))
-
+        message("Successfully downloaded: ", filename, " (", file_size, " KB)")
         successful_downloads <- successful_downloads + 1
-
       } else {
-        message("❌ Failed to download (HTTP ", status_code(response), "): ", urls_df$link_text[i])
-
-        download_log <- rbind(download_log, data.frame(
-          epbc_number     = epbc_original,
-          filename        = filename,
-          filepath        = NA,
-          download_status = paste("HTTP Error", status_code(response)),
-          file_size_kb    = NA,
-          download_time   = as.character(Sys.time())
-        ))
-
+        message("Failed to download (HTTP ", status_code(response), "): ", urls_df$link_text[i])
         failed_downloads <- failed_downloads + 1
         if (file.exists(filepath)) file.remove(filepath)
       }
@@ -326,31 +265,19 @@ download_pdfs_for_search <- function(urls_df, download_folder = CONFIG$download_
       Sys.sleep(2)
 
     }, error = function(e) {
-      message("❌ Error downloading ", urls_df$link_text[i], ": ", e$message)
-
-      download_log <- rbind(download_log, data.frame(
-        epbc_number     = urls_df$link_text[i],
-        filename        = NA,
-        filepath        = NA,
-        download_status = paste("Error:", e$message),
-        file_size_kb    = NA,
-        download_time   = as.character(Sys.time())
-      ))
-
+      message("Error downloading ", urls_df$link_text[i], ": ", e$message)
       failed_downloads <- failed_downloads + 1
-      if (exists("filepath") && file.exists(filepath)) file.remove(filepath)
     })
   }
 
   message("\n=== Download Summary ===")
-  message("Successful downloads: ", successful_downloads)
-  message("Failed downloads: ", failed_downloads)
+  message("Successful: ", successful_downloads)
+  message("Failed: ", failed_downloads)
 
   return(list(
     successful = successful_downloads,
     failed     = failed_downloads,
-    folder     = download_folder,
-    log        = download_log
+    folder     = download_folder
   ))
 }
 
@@ -444,7 +371,6 @@ extract_species_tables <- function(pdf_path) {
     all_species <- unique(all_species)
     all_species$species     <- gsub("\\s+", " ", trimws(all_species$species))
     all_species$common_name <- gsub("\\s+", " ", trimws(all_species$common_name))
-
     all_species <- all_species[
       !is.na(all_species$species) &
         all_species$species != "" &
@@ -517,7 +443,6 @@ search_trigger_species <- function(trigger_species_df = CONFIG$trigger_species,
 
       sci_match    <- which(grepl(trigger_scientific[i], pdf_species, fixed = TRUE))
       common_match <- which(grepl(trigger_common[i],     pdf_common,  fixed = TRUE))
-
       matched_rows <- unique(c(sci_match, common_match))
 
       for (row_idx in matched_rows) {
@@ -534,18 +459,16 @@ search_trigger_species <- function(trigger_species_df = CONFIG$trigger_species,
             if (has_indirect) "Indirect" else ""
           )
 
-          species_name <- str_to_title(trigger_species_df$common[i])
-
+          species_name       <- str_to_title(trigger_species_df$common[i])
           found_species      <- c(found_species, species_name)
           found_impact_types <- c(found_impact_types, impact_type)
 
-          message("  ✅ FOUND: ", species_name, " - ", impact_type, " impact")
+          message("  FOUND: ", species_name, " - ", impact_type, " impact")
         }
       }
     }
 
     if (length(found_species) > 0) {
-
       pdf_url <- NA
       if (!is.null(urls_df) && "pdf_url" %in% names(urls_df) && "link_text" %in% names(urls_df)) {
         url_match <- urls_df[urls_df$link_text == referral_number, "pdf_url"]
@@ -564,7 +487,7 @@ search_trigger_species <- function(trigger_species_df = CONFIG$trigger_species,
 
   message("\n=== Search Summary ===")
   message("PDFs searched: ", length(pdf_files))
-  message("Referrals with trigger species (with impact): ", nrow(results))
+  message("Referrals with trigger species: ", nrow(results))
 
   return(results)
 }
@@ -576,14 +499,11 @@ search_trigger_species <- function(trigger_species_df = CONFIG$trigger_species,
 load_processed_referrals <- function() {
   if (file.exists(CONFIG$tracking_file)) {
     df <- read.csv(CONFIG$tracking_file, stringsAsFactors = FALSE)
-
-    # Ensure all required columns exist (backwards compatibility)
-    if (!"impact_type"      %in% names(df)) df$impact_type      <- NA
-    if (!"referral_number"  %in% names(df)) df$referral_number  <- character()
-    if (!"trigger_species"  %in% names(df)) df$trigger_species  <- character()
-    if (!"pdf_url"          %in% names(df)) df$pdf_url          <- character()
-    if (!"date_processed"   %in% names(df)) df$date_processed   <- character()
-
+    if (!"impact_type"     %in% names(df)) df$impact_type     <- NA
+    if (!"referral_number" %in% names(df)) df$referral_number <- character()
+    if (!"trigger_species" %in% names(df)) df$trigger_species <- character()
+    if (!"pdf_url"         %in% names(df)) df$pdf_url         <- character()
+    if (!"date_processed"  %in% names(df)) df$date_processed  <- character()
     return(df)
   } else {
     return(data.frame(
@@ -602,10 +522,8 @@ load_processed_referrals <- function() {
 # ============================================================================
 
 save_processed_referrals <- function(processed_df) {
-  # Ensure the data directory exists
   data_dir <- dirname(CONFIG$tracking_file)
   if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
-
   write.csv(processed_df, CONFIG$tracking_file, row.names = FALSE)
 }
 
@@ -623,95 +541,54 @@ identify_new_referrals <- function(current_results, processed_referrals) {
       stringsAsFactors = FALSE
     ))
   }
-
   if (nrow(processed_referrals) == 0) return(current_results)
 
-  new_referrals <- current_results[
+  return(current_results[
     !current_results$referral_number %in% processed_referrals$referral_number,
-  ]
-
-  return(new_referrals)
+  ])
 }
 
 # ============================================================================
-# FUNCTION 10: Create HTML table file
+# FUNCTION 10: Create text output
 # ============================================================================
 
-create_html_table_file <- function(referrals_df, html_output_folder = CONFIG$html_output_folder) {
+create_text_output <- function(referrals_df, output_folder = CONFIG$output_folder) {
 
-  if (!dir.exists(html_output_folder)) {
-    dir.create(html_output_folder, recursive = TRUE)
-    cat("Created HTML output folder:", html_output_folder, "\n")
+  if (!dir.exists(output_folder)) {
+    dir.create(output_folder, recursive = TRUE)
   }
 
-  output_file <- file.path(html_output_folder, "new_epbc_referrals.html")
+  output_file <- file.path(output_folder, "new_epbc_referrals.txt")
 
   if (nrow(referrals_df) == 0) {
-    html_content <- paste0(
-      "<!DOCTYPE html>",
-      "<html><head><title>EPBC Referrals Update</title></head><body>",
-      "<h2 style='color: #333; font-family: Arial, sans-serif;'>EPBC Referrals Update - ",
-      format(Sys.Date(), "%d %B %Y"), "</h2>",
-      "<p style='font-family: Arial, sans-serif; color: #666;'>No new referrals containing trigger species found.</p>",
-      "</body></html>"
+    writeLines(
+      c(
+        paste("EPBC Referrals Update -", format(Sys.Date(), "%d %B %Y")),
+        "",
+        "No new referrals containing trigger species found."
+      ),
+      output_file
     )
   } else {
-
-    formatted_table <- referrals_df %>%
-      mutate(
-        `Referral Number` = referral_number,
-        `Trigger Species` = trigger_species,
-        `Impact Type`     = impact_type,
-        `Date Found`      = format(Sys.Date(), "%d %B %Y")
-      ) %>%
-      select(`Referral Number`, `Trigger Species`, `Impact Type`, `Date Found`)
-
-    html_table <- formatted_table %>%
-      kableExtra::kbl(
-        format     = "html",
-        escape     = FALSE,
-        table.attr = 'style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 14px; margin: 20px 0;"'
-      ) %>%
-      kableExtra::kable_styling(
-        bootstrap_options = c("striped", "hover"),
-        full_width        = TRUE,
-        position          = "center"
-      ) %>%
-      kableExtra::row_spec(0, background = "#f8f9fa", bold = TRUE, color = "#333",
-                           extra_css = "border: 2px solid #dee2e6; padding: 12px;") %>%
-      kableExtra::column_spec(1, color = "#333", width = "20%") %>%
-      kableExtra::column_spec(2, color = "#333", width = "40%") %>%
-      kableExtra::column_spec(3, color = "#333", width = "20%") %>%
-      kableExtra::column_spec(4, color = "#333", width = "20%")
-
-    html_content <- paste0(
-      "<!DOCTYPE html>",
-      "<html><head>",
-      "<title>EPBC Referrals Update</title>",
-      "<style>",
-      "body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }",
-      ".container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }",
-      "h2 { color: #333; border-bottom: 3px solid #333; padding-bottom: 10px; }",
-      ".summary { background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #333; }",
-      "table tr:hover { background-color: #f1f3f4 !important; }",
-      "</style>",
-      "</head><body>",
-      "<div class='container'>",
-      "<div class='summary'>",
-      "<strong>Summary:</strong> Found ", nrow(referrals_df),
-      " new referral(s) containing trigger species with impact.",
-      " Note that referrals are open for comment for 10 business days.",
-      "</div>",
-      html_table,
-      "<p style='margin-top: 20px; color: #666; font-size: 12px;'>",
-      "Generated automatically by EPBC Referrals Monitoring System at ",
-      format(Sys.time(), "%d/%m/%Y %H:%M"), "</p>",
-      "</div></body></html>"
+    header <- c(
+      paste("EPBC Referrals Update -", format(Sys.Date(), "%d %B %Y")),
+      paste("Found", nrow(referrals_df), "new referral(s) with trigger species"),
+      paste("Note: referrals are open for comment for 10 business days"),
+      "",
+      paste(rep("-", 80), collapse = ""),
+      sprintf("%-20s %-40s %-15s", "Referral Number", "Trigger Species", "Impact Type"),
+      paste(rep("-", 80), collapse = "")
     )
+
+    rows <- sprintf("%-20s %-40s %-15s",
+                    referrals_df$referral_number,
+                    referrals_df$trigger_species,
+                    referrals_df$impact_type)
+
+    writeLines(c(header, rows), output_file)
   }
 
-  writeLines(html_content, output_file)
-  cat("Created HTML table file:", output_file, "\n")
+  cat("Created output file:", output_file, "\n")
   return(output_file)
 }
 
@@ -740,7 +617,6 @@ run_epbc_monitoring <- function() {
   # Step 1: Scrape EPBC URLs
   cat("\n1. Scraping EPBC referral URLs...\n")
   urls <- scrape_epbc_urls_simple()
-
   if (is.null(urls) || nrow(urls) == 0) stop("Failed to scrape URLs from EPBC portal")
   cat("Found", nrow(urls), "URLs\n")
 
@@ -752,7 +628,6 @@ run_epbc_monitoring <- function() {
   # Step 3: Download PDFs
   cat("\n3. Downloading PDFs...\n")
   download_result <- download_pdfs_for_search(urls_with_pdfs, CONFIG$download_folder)
-
   if (download_result$successful == 0) stop("No PDFs were successfully downloaded")
   cat("Successfully downloaded", download_result$successful, "PDFs\n")
 
@@ -770,9 +645,9 @@ run_epbc_monitoring <- function() {
   new_referrals <- identify_new_referrals(current_results, processed_referrals)
   cat("Found", nrow(new_referrals), "NEW referrals\n")
 
-  # Step 6: Create HTML output
-  cat("\n6. Creating HTML output...\n")
-  html_file <- create_html_table_file(new_referrals)
+  # Step 6: Create text output
+  cat("\n6. Creating text output...\n")
+  output_file <- create_text_output(new_referrals)
 
   # Step 7: Update tracking file
   if (nrow(new_referrals) > 0) {
@@ -792,13 +667,13 @@ run_epbc_monitoring <- function() {
 
     save_processed_referrals(updated_processed)
     cat("Updated tracking file with", nrow(new_referrals), "new referrals\n")
-    cat("\n🚨 ALERT: New referrals found!\n")
+    cat("\nALERT: New referrals found!\n")
 
   } else {
     cat("\nNo new referrals found.\n")
   }
 
-  # Clean up PDFs after run
+  # Clean up PDFs
   old_files <- list.files(CONFIG$download_folder, pattern = "\\.pdf$", full.names = TRUE)
   if (length(old_files) > 0) {
     file.remove(old_files)
@@ -807,7 +682,7 @@ run_epbc_monitoring <- function() {
 
   cat("\n=== MONITORING COMPLETE ===\n")
   cat("Finished at:", as.character(Sys.time()), "\n")
-  cat("HTML output:", html_file, "\n")
+  cat("Output file:", output_file, "\n")
 }
 
 # Run
