@@ -66,10 +66,7 @@ jobs:
               'dplyr',
               'stringr',
               'pdftools',
-              'httr',
-              'knitr',
-              'kableExtra',
-              'htmltools'
+              'httr'
             ), repos = 'https://cloud.r-project.org')
             install.packages('tabulapdf', repos = c('https://ropensci.r-universe.dev', 'https://cloud.r-project.org'))
           "
