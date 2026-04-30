@@ -1,8 +1,12 @@
-EPBC Referrals Update - 29 April 2026
-Found 1 new referral(s) with trigger species
+EPBC Referrals Update - 30 April 2026
+Found 5 new referral(s) with trigger species
 Note: referrals are open for comment for 10 business days
 
 --------------------------------------------------------------------------------
 Referral Number      Trigger Species                          Impact Type    
 --------------------------------------------------------------------------------
+2026/10469           Regent Honeyeater                        Direct & Indirect
+2026/10480           Eastern Curlew                           Indirect       
+2026/10481           Swift Parrot                             Indirect       
+2026/10486           Forest Red-Tailed Black-Cockatoo, Baudin's Black-Cockatoo Direct & Indirect
 2026/10493           Swift Parrot                             Direct & Indirect
