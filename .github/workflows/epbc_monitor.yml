@@ -82,22 +82,20 @@ jobs:
 
       - name: Create Asana tasks for new referrals
         if: success()
+        env:
+          ASANA_TOKEN: ${{ secrets.ASANA_TOKEN }}
+          ASANA_PROJECT_ID: ${{ secrets.ASANA_PROJECT_ID }}
         run: |
           if [ -s output/new_epbc_referrals.txt ]; then
             EMAIL_BODY=$(cat output/new_epbc_referrals.txt)
             if [[ "$EMAIL_BODY" != *"No new referrals"* ]]; then
               while IFS= read -r line; do
                 if [[ ! "$line" == *"---"* ]] && [[ ! "$line" == *"Referral"* ]] && [[ ! -z "$line" ]] && [[ ! "$line" == *"EPBC"* ]] && [[ ! "$line" == *"Found"* ]] && [[ ! "$line" == *"Note"* ]]; then
+                  PROJECT_ID="${ASANA_PROJECT_ID}"
                   curl -s -X POST https://app.asana.com/api/1.0/tasks \
-                    -H "Authorization: Bearer ${{ secrets.ASANA_TOKEN }}" \
+                    -H "Authorization: Bearer ${ASANA_TOKEN}" \
                     -H "Content-Type: application/json" \
-                    -d "{
-                      \"data\": {
-                        \"name\": \"EPBC Referral: $(echo $line | awk '{print $1}')\",
-                        \"notes\": \"$line\",
-                        \"projects\": [${{ secrets.ASANA_PROJECT_ID }}]
-                      }
-                    }"
+                    -d "{\"data\": {\"name\": \"EPBC Referral: $(echo $line | awk '{print $1}')\", \"notes\": \"${line}\", \"projects\": [\"${PROJECT_ID}\"]}}"
                 fi
               done < output/new_epbc_referrals.txt
             fi
