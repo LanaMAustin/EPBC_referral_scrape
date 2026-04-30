@@ -95,7 +95,7 @@ jobs:
                       \"data\": {
                         \"name\": \"EPBC Referral: $(echo $line | awk '{print $1}')\",
                         \"notes\": \"$line\",
-                        \"projects\": [\"${{ secrets.ASANA_PROJECT_ID }}\"]
+                        \"projects\": [${{ secrets.ASANA_PROJECT_ID }}]
                       }
                     }"
                 fi
