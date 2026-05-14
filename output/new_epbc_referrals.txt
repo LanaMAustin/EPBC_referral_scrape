@@ -1,8 +1,3 @@
-EPBC Referrals Update - 13 May 2026
-Found 1 new referral(s) with trigger species
-Note: referrals are open for comment for 10 business days
+EPBC Referrals Update - 14 May 2026
 
---------------------------------------------------------------------------------
-Referral Number      Trigger Species                          Impact Type    
---------------------------------------------------------------------------------
-2026/10510           Swift Parrot, Australasian Bittern       Direct & Indirect, Indirect
+No new referrals containing trigger species found.
