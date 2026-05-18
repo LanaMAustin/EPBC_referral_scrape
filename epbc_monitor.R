@@ -80,11 +80,11 @@ scrape_epbc_urls_simple <- function() {
     cat("Navigating to EPBC portal...\n")
     b$Page$navigate("https://epbcpublicportal.environment.gov.au/open-for-comments/")
     b$Page$loadEventFired()
-    Sys.sleep(5)
+    Sys.sleep(10)
 
     cat("Loading dynamic content...\n")
     b$Runtime$evaluate("window.scrollTo(0, document.body.scrollHeight);")
-    Sys.sleep(3)
+    Sys.sleep(6)
 
     html_result  <- b$Runtime$evaluate("document.documentElement.outerHTML")
     html_content <- html_result$result$value
