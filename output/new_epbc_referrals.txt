@@ -1,8 +1,3 @@
-EPBC Referrals Update - 21 May 2026
-Found 1 new referral(s) with trigger species
-Note: referrals are open for comment for 10 business days
+EPBC Referrals Update - 22 May 2026
 
---------------------------------------------------------------------------------
-Referral Number      Trigger Species                          Impact Type    
---------------------------------------------------------------------------------
-2026/10505           Hooded Plover, Australasian Bittern, Eastern Curlew Indirect       
+No new referrals containing trigger species found.
