@@ -1,9 +1,3 @@
-EPBC Referrals Update - 09 June 2026
-Found 2 new referral(s) with trigger species
-Note: referrals are open for comment for 10 business days
+EPBC Referrals Update - 10 June 2026
 
---------------------------------------------------------------------------------
-Referral Number      Trigger Species                          Impact Type    
---------------------------------------------------------------------------------
-2026/10515           Carnaby's Black-Cockatoo, Forest Red-Tailed Black-Cockatoo Direct & Indirect
-2026/10530           Australasian Bittern                     Direct & Indirect
+No new referrals containing trigger species found.
