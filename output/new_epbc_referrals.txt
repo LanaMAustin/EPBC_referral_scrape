@@ -1,3 +1,9 @@
-EPBC Referrals Update - 19 June 2026
+EPBC Referrals Update - 22 June 2026
+Found 2 new referral(s) with trigger species
+Note: referrals are open for comment for 10 business days
 
-No new referrals containing trigger species found.
+--------------------------------------------------------------------------------
+Referral Number      Trigger Species                          Impact Type    
+--------------------------------------------------------------------------------
+2026/10523           Red Goshawk                              Direct & Indirect
+2026/10551           Swift Parrot                             Direct & Indirect
