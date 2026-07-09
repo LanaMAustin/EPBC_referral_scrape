@@ -1,8 +1,8 @@
-EPBC Referrals Update - 08 July 2026
+EPBC Referrals Update - 09 July 2026
 Found 1 new referral(s) with trigger species
 Note: referrals are open for comment for 10 business days
 
 --------------------------------------------------------------------------------
 Referral Number      Trigger Species                          Impact Type    
 --------------------------------------------------------------------------------
-2026/10565           Eastern Curlew                           Direct         
+2026/10554           Swift Parrot, Malleefowl, Plains-Wanderer Direct & Indirect
