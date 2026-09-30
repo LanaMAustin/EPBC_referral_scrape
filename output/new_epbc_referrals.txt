@@ -1,8 +1,8 @@
-EPBC Referrals Update - 29 September 2026
+EPBC Referrals Update - 30 September 2026
 Found 1 new referral(s) with trigger species
 Note: referrals are open for comment for 10 business days
 
 --------------------------------------------------------------------------------
 Referral Number      Trigger Species                          Impact Type    
 --------------------------------------------------------------------------------
-2026/10657           Plains-Wanderer                          Direct & Indirect
+2026/10664           Forest Red-Tailed Black-Cockatoo         Direct & Indirect
